@@ -24,6 +24,7 @@ TODO:
     - better probability-based counter
     - add quiet mode
     - use logging
+    - write tests
     - timer (estimated time), MH/s stats
     - add more error handling
     - optimize GS and WS

@@ -32,6 +32,17 @@
 
 #define SWAP32(n) (rotate(n & 0x00FF00FF, 24U)|(rotate(n, 8U) & 0x00FF00FF))
 
+/*
+ * sha1_prefix_search - searches for sha1 sum of the data with particular prefix
+ *
+ * preprocessed_message is in 64 byte chunks (includes the orig message length)
+ * message_size size of the message (divisible by 64)
+ * target - 160bits, zero padded after the real target
+ * precisions bits - the bits of target to be compared
+ * offset - where in the message to write the hex dump of (start+gid)
+ * start is the start to which we add the gid, change the message if uint is not long enough
+ * result[] = {found is found, the start+gid that matches target}
+ */
 __kernel void sha1_prefix_search(
         __global const uchar * preprocessed_message,
         const uint message_size,
@@ -40,17 +51,9 @@ __kernel void sha1_prefix_search(
         const uint offset,
         const ulong start,
         __global ulong * result
-    )
-/*
- * preprocessed_message is in 64 byte chunks (includes the original message length)
- * message_size size of the message (divisible by 64)
- * target - 160bits, zero padded after the real target
- * precisions bits - the bits of target to be compared
- * offset - where in the message to write the hex dump of (start+gid)
- * start is the start to which we add the gid, change the message if uint is not long enough
- * result[] = {found is found, the start+gid that matches target}
- */
-{
+    ) {
+    // TODO: export the sha1 compute cycle to function, fill W boxes better
+    
     uint t;
     uint W[16], temp, A,B,C,D,E;
     uint counter_words; 
