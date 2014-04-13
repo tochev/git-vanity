@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 """
 git-vanity, a script to make vanity commits by changing the committer name
 Copyright (C) 2014  Tocho Tochev <tocho AT tochev DOT net>
@@ -31,7 +31,6 @@ TODO:
     - support other revisions than the HEAD
     - add more documentation (as usual)
     - add option for length of name addition
-    - python3 ?
     - !!! rewrite in C :)
 """
 
@@ -40,9 +39,9 @@ import numpy as np
 import os
 import pyopencl as cl
 import re
-import sha
 import struct
 import subprocess
+from hashlib import sha1
 
 GS = 4*1024*1024      # GPU iteration global_size
 WS = 256              # work_size
@@ -58,6 +57,7 @@ def hex2target(hex_prefix):
 
 def xrange_custom(start, stop, step):
     # deals with uint64
+    assert step > 0
     current = start
     while current < stop:
         yield current
@@ -72,9 +72,9 @@ def get_padded_size(size):
 def sha1_preprocess_data(data):
     size = get_padded_size(len(data))
     preprocessed_message = np.zeros(size, dtype=np.ubyte)
-    preprocessed_message[:len(data)] = map(ord, data)
+    preprocessed_message[:len(data)] = list(data)
     preprocessed_message[len(data)] = 0x80
-    preprocessed_message[-8:] = map(ord, struct.pack('>Q', len(data)*8))
+    preprocessed_message[-8:] = list(struct.pack('>Q', len(data)*8))
     return preprocessed_message
 
 def load_opencl():
@@ -85,7 +85,7 @@ def load_opencl():
                 os.path.realpath(
                     __file__)),
             "sha1_prefix_search.cl"),
-        "rb").read()
+        "r").read()
     ctx = cl.create_some_context()
     queue = cl.CommandQueue(ctx)
     prg = cl.Program(ctx, CL_PROGRAM).build()
@@ -103,12 +103,12 @@ def preprocess_commit(commit):
     """
     commit_lines = list(commit.splitlines())
 
-    committer_index = commit_lines.index("") - 1
+    committer_index = commit_lines.index(b'') - 1
     committer_line = commit_lines[committer_index]
 
-    match = re.match(r'committer (?P<name>.*?)'
-                     r'(?P<hex> [0-9A-F]{16})? <(?P<mail>.*)> '
-                     r'(?P<date>.*)',
+    match = re.match(br'committer (?P<name>.*?)'
+                     br'(?P<hex> [0-9A-F]{16})? <(?P<mail>.*)> '
+                     br'(?P<date>.*)',
                      committer_line)
 
     assert match, "Unable to parse committer line `%s'" % committer_line
@@ -118,12 +118,12 @@ def preprocess_commit(commit):
     committer_date = match.group('date')
     # discard match.group('hex'), assume nobody has 64bit hex last name
 
-    prefix = ('\n'.join(commit_lines[:committer_index]) +
-              '\ncommitter ' + committer_name + ' ')
-    rest = (('F'*16) + " <" + committer_mail + "> " + committer_date +
-            '\n' + '\n'.join(commit_lines[committer_index + 1:]) + '\n')
+    prefix = (b'\n'.join(commit_lines[:committer_index]) +
+              b'\ncommitter ' + committer_name + b' ')
+    rest = ((b'F'*16) + b" <" + committer_mail + b"> " + committer_date +
+            b'\n' + b'\n'.join(commit_lines[committer_index + 1:]) + b'\n')
 
-    header = 'commit %d\x00' % (len(prefix) + len(rest))
+    header = commit_header(len(prefix) + len(rest))
 
     return (header + prefix + rest,
             len(header) + len(prefix),
@@ -131,11 +131,14 @@ def preprocess_commit(commit):
             committer_mail,
             committer_date)
 
+def commit_header(commit_len):
+    return bytes('commit %d\x00' % commit_len, 'ascii')
+
 def commit_add_header(commit):
-    return 'commit %d\x00%s' % (len(commit), commit)
+    return commit_header(len(commit)) + commit
 
 def commit_without_header(commit):
-    null_index = commit.find('\x00')
+    null_index = commit.find(b'\x00')
     if null_index == -1:
         return commit
     return commit[null_index + 1:]
@@ -188,10 +191,10 @@ def sha1_prefix_search_opencl(data, hex_prefix, offset,
 
         cl.enqueue_copy(queue, result, result_buf)
 
+        #print (gs/(time.time()-t1))/(10**6), "MH/s"
+
         if result[0]: # we found it
             return ('%016x' % result[1]).upper()
-
-        #print (gs/(time.time()-t1))/(10**6), "MH/s"
 
     else:
         raise ValueError("Unable to find matching prefix...")
@@ -201,9 +204,9 @@ def amend_commit(committer_name,
                  committer_date,
                  hex_magic):
     env = os.environ.copy()
-    env['GIT_COMMITTER_NAME'] = committer_name + " " + hex_magic
-    env['GIT_COMMITTER_EMAIL'] = committer_mail
-    env['GIT_COMMITTER_DATE'] = committer_date
+    env['GIT_COMMITTER_NAME'] = committer_name.decode() + " " + hex_magic
+    env['GIT_COMMITTER_EMAIL'] = committer_mail.decode()
+    env['GIT_COMMITTER_DATE'] = committer_date.decode()
 
     print(env['GIT_COMMITTER_NAME'])
 
@@ -231,8 +234,8 @@ def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False):
            "for commit `%s'\n"
            "================\n%s================\n\n")
           % (hex_prefix,
-             sha.sha(commit_add_header(commit)).hexdigest(),
-             commit))
+             sha1(commit_add_header(commit)).hexdigest(),
+             commit.decode()))
 
     result = sha1_prefix_search_opencl(data,
                                        hex_prefix,
@@ -242,7 +245,7 @@ def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False):
                                        quiet=quiet)
 
     final = (data[:placeholder_offset] +
-             result +
+             result.encode() +
              data[placeholder_offset + 16:])
 
     print(("\nFound sha1 prefix `%s'\n"
@@ -250,9 +253,9 @@ def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False):
            "Using %s\n"
            "================\n%s================\n\n")
           % (hex_prefix,
-             sha.sha(final).hexdigest(),
+             sha1(final).hexdigest(),
              result,
-             commit_without_header(final)))
+             commit_without_header(final).decode()))
 
     if write_changes:
         print("Writing changes to the repository...\n")
