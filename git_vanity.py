@@ -232,7 +232,8 @@ def amend_commit(committer_name,
 
     subprocess.check_call(['git', 'commit', '--amend', '--no-edit',
                            '-c', 'HEAD'], env=env)
-    subprocess.check_call(['git', 'show-ref', '--head'])
+    print('Current HEAD:')
+    subprocess.check_call(['git', 'show-ref', '-s', 'HEAD', '--head'])
 
 def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False):
     """
@@ -287,8 +288,8 @@ def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False):
 
 if __name__ ==  '__main__':
     parser = argparse.ArgumentParser(
-        description="Create vanity commit checksums"
-        "by extending the committer name.")
+        description="Create vanity commit hashes "
+                    "by extending the committer name.")
     parser.add_argument('hex_prefix',
                         type=str,
                         help="the desired hex prefix")
@@ -309,7 +310,7 @@ if __name__ ==  '__main__':
     parser.add_argument('-W', '--write',
                         action='store_true',
                         default=False,
-                        help="Enable writing to the repo")
+                        help="enable writing to the repo")
     parser.add_argument('-q', '--quiet',
                         action='store_true',
                         default=False,

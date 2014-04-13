@@ -54,7 +54,7 @@ __kernel void sha1_prefix_search(
     ) {
     uint t;
     uint W[16], temp, A,B,C,D,E;
-    uint counter_words; 
+    uint counter_words;
 
     const uint gid = get_global_id(0);
 
@@ -73,7 +73,7 @@ __kernel void sha1_prefix_search(
     __global const uint * offset_area_start = chunk + (offset >> 2);
 
     const ulong current = start + gid;
-    
+
     // init special_words;
     uchar special_words[20];
     for (t=0; t < 20; t++) {
@@ -83,13 +83,13 @@ __kernel void sha1_prefix_search(
             special_words[t] = TO_HEX[(current >> (60 - ((t - (offset & 0x3)) << 2))) & 0xF];
         }
     }
-    
+
 
     for (chunk=chunk; chunk < stop; chunk += 16) {
 
         // initialize boxes
         for (t = 0 ; t < 16 ; t++) {
-            if ((offset_area_start <= (chunk + t)) && 
+            if ((offset_area_start <= (chunk + t)) &&
                 ((chunk + t) - offset_area_start <= 4)) {
                 W[t] = ((const uint *)special_words)[(chunk + t) - offset_area_start];
             } else {
@@ -234,7 +234,7 @@ __kernel void sha1_prefix_search(
 
 #undef K
 #undef F
-        
+
         // final switch
         H[0] = A + H[0];
         H[1] = B + H[1];
