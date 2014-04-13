@@ -52,8 +52,6 @@ __kernel void sha1_prefix_search(
         const ulong start,
         __global ulong * result
     ) {
-    // TODO: export the sha1 compute cycle to function, fill W boxes better
-    
     uint t;
     uint W[16], temp, A,B,C,D,E;
     uint counter_words; 
@@ -263,6 +261,5 @@ __kernel void sha1_prefix_search(
     if (!result[0]) {
         result[0] = 1;
         result[1] = current;
-        /*result[2] = H[0];*/
     }
 }

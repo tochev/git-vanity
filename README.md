@@ -47,4 +47,15 @@ FAQ
 
 TODOs
 -----
-See the source files.
+ - better probability-based counter
+ - better precision in the counters
+ - add quiet mode
+ - use logging
+ - write tests
+ - add more error handling
+ - auto-optimization of GS and WS
+ - add for support other revisions than the HEAD
+ - add more documentation (as usual)
+ - add option for length of the name addition
+ - cl kernel: export the sha1 compute cycle to function, fill W boxes better
+ - !!! rewrite in C :)

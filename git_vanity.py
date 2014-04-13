@@ -18,20 +18,6 @@ Please tweak GS and WS to suit your video card.
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-TODO:
-    - better probability-based counter
-    - add quiet mode
-    - use logging
-    - write tests
-    - timer (estimated time), MH/s stats
-    - add more error handling
-    - optimize GS and WS
-    - support other revisions than the HEAD
-    - add more documentation (as usual)
-    - add option for length of name addition
-    - !!! rewrite in C :)
 """
 
 import argparse
@@ -41,11 +27,14 @@ import pyopencl as cl
 import re
 import struct
 import subprocess
+import time
+from datetime import timedelta
 from hashlib import sha1
+
 
 GS = 4*1024*1024      # GPU iteration global_size
 WS = 256              # work_size
-
+MIN_PROGRESS_RESOLUTION = 1.0 # seconds
 
 def hex2target(hex_prefix):
     """Returns 5*int32 0-padded target and bit length based on hex prefix"""
@@ -55,12 +44,52 @@ def hex2target(hex_prefix):
         dtype=np.uint32)
     return target, len(hex_prefix)*4
 
-def xrange_custom(start, stop, step):
+def progress(start, stop, step, precision_bits, quiet=False):
+    """yields new starts and displays progress"""
     # deals with uint64
     assert step > 0
+
+    if not quiet:
+        start_time = time.time()
+        last_progress_time = None
+        last_progress_current = start
+
     current = start
     while current < stop:
+
+        if not quiet:
+            time_now = time.time()
+
+            if (not last_progress_time or
+                (time_now - last_progress_time) > MIN_PROGRESS_RESOLUTION):
+                finished = current - start
+                run_time = time_now - start_time
+
+                if not last_progress_time:
+                    print('\b\r\b\r')
+
+                print("Processing GS iteration %s" %
+                    (finished // step + 1))
+                print("   Time:         %s" %
+                        timedelta(seconds=run_time))
+                if last_progress_current == current:
+                    print("   Last Speed:   N/A MH/s      (Avg: N/A MH/s)")
+                else:
+                    print("   Last Speed:   %.4f MH/s     (Avg: %.4f MH/s)" %
+                            (((current - last_progress_current) /
+                                (time_now - last_progress_time)) / 10**6,
+                            (finished / run_time) / 10**6))
+                print("   Tries remaining (optimistic):  %.6f%% ..." %
+                    (100 * (1 - float(finished) / (1 << precision_bits))))
+                print("   Chance (CDF):                  %.6f%% ..." %
+                    (100 * (1 -
+                        (1 - 1.0 / (1 << precision_bits)) ** (finished))))
+
+                last_progress_time = time.time()
+                last_progress_current = current
+
         yield current
+
         current += step
 
 def get_padded_size(size):
@@ -153,10 +182,12 @@ def sha1_prefix_search_opencl(data, hex_prefix, offset,
         opencl_vars = load_opencl()
         ctx, queue, prg = opencl_vars
 
+    assert gs % ws == 0, "Global size must be a multiple of work size"
+
     target, precision_bits = hex2target(hex_prefix)
     preprocessed_message = sha1_preprocess_data(data)
 
-    result = np.zeros(3, dtype=np.uint64)
+    result = np.zeros(2, dtype=np.uint64)
 
     mf = cl.mem_flags
     # create buffers
@@ -168,16 +199,7 @@ def sha1_prefix_search_opencl(data, hex_prefix, offset,
                            hostbuf=result)
 
     # the main stuff
-    for current_start in xrange_custom(start, stop, gs):
-        #import time
-        #t1 = time.time()
-
-        if not quiet:
-            print("Processing GS iteration %s" %
-                  ((current_start - start) / gs + 1))
-            print("Estimated remaining (randomness involved) %.6lf%% ..." %
-                  (100*(1 - float(current_start - start) / (1 << precision_bits))))
-
+    for current_start in progress(start, stop, gs, precision_bits, quiet):
         prg.sha1_prefix_search(queue,
                                (gs,),
                                (ws,),
@@ -190,8 +212,6 @@ def sha1_prefix_search_opencl(data, hex_prefix, offset,
                                result_buf)
 
         cl.enqueue_copy(queue, result, result_buf)
-
-        #print (gs/(time.time()-t1))/(10**6), "MH/s"
 
         if result[0]: # we found it
             return ('%016x' % result[1]).upper()
