@@ -5,7 +5,7 @@ git-vanity
 
 This is done by adding a string to the committer's name, note that the visualization utilities usually show the author's name.
 
-*Homepage:* https://github.com/tochev/git-vanity
+*Homepage:* FIXME
 
 
 Installing
@@ -18,7 +18,7 @@ Install `python3`, `pyopencl`, `numpy`, and `opencl`:
 
 Get the project:
 
-    git clone https://github.com/tochev/git-vanity
+    git clone FIXME
 
 In order to use the GPU you will need drivers that support OpenCL, which at the moment means that for Radeon you will need the proprietary ones (fglrx).
 
