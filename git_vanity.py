@@ -296,7 +296,7 @@ if __name__ ==  '__main__':
     parser.add_argument('-s', '--start',
                         default='0',
                         type=lambda x: int(x, 16),
-                        help="starting the search from number (hex)")
+                        help="start the search from number (hex)")
     parser.add_argument('-g', '--global-size',
                         dest='gs',
                         default=GS,

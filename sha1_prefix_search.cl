@@ -65,8 +65,8 @@ __kernel void sha1_prefix_search(
                  0x10325476,
                  0xC3D2E1F0};
 
-    const uchar TO_HEX[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
-                              '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    __const const uchar TO_HEX[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                                      '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
     __global const uint * chunk=(__global const uint *)preprocessed_message;
     __global const uint * stop = chunk + (message_size >> 2);
