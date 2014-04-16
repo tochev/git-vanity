@@ -13,7 +13,8 @@ Installing
 
 Install `python3`, `pyopencl`, `numpy`, and `opencl`:
 
-    apt-get install libopencl1 opencl-icd # there are also amd and nvidia
+    # substitute amd for nvidia if you have nvidia gpu
+    apt-get install amd-libopencl1 amd-opencl-icd
     apt-get install python3 python3-numpy python3-pyopencl
 
 Get the project:

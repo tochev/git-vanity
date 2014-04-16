@@ -247,17 +247,20 @@ __kernel void sha1_prefix_search(
     // Check if prefix is correct and return if not
     counter_words = precision_bits/32;
     for (t = 0; t < counter_words; t++) {
-        if (target[t] != H[t])
+        if (target[t] != H[t]) {
             return;
+        }
     }
     if (counter_words < 5 && (precision_bits % 32)) {
         if (target[counter_words]
                 !=
-            (H[counter_words] & (0xFFFFFFFF << ((counter_words+1)*32 - precision_bits))))
+            (H[counter_words] & (0xFFFFFFFF << ((counter_words+1)*32 - precision_bits)))) {
             return;
+        }
     }
+
     // WE FOUND IT :)
-    barrier(CLK_GLOBAL_MEM_FENCE);
+    // we do not care about sync too much since the write is atomic
     if (!result[0]) {
         result[0] = 1;
         result[1] = current;
