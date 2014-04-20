@@ -33,7 +33,7 @@ from hashlib import sha1
 
 
 GS = 4*1024*1024      # GPU iteration global_size
-WS = 256              # work_size
+WS = 64               # work_size
 MIN_PROGRESS_RESOLUTION = 1.0 # seconds
 
 def hex2target(hex_prefix):
