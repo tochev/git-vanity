@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """
-git-vanity, a script to make vanity commits by changing the committer name
+git-vanity, a script to make vanity commits
+This is done either by changing the committer's name or the raw commit object.
 Copyright (C) 2014  Tocho Tochev <tocho AT tochev DOT net>
 
 Please tweak GS and WS to suit your video card.
@@ -123,7 +124,7 @@ def load_opencl():
 def extract_commit(rev):
     return subprocess.check_output(["git", "cat-file", "-p", rev])
 
-def preprocess_commit(commit):
+def preprocess_commit_committer_change(commit):
     """
     Returns:
         [commit_with_header_and_placeholder,
@@ -160,6 +161,34 @@ def preprocess_commit(commit):
             committer_name,
             committer_mail,
             committer_date)
+
+def preprocess_commit_raw_change(commit):
+    """
+    Returns:
+        [commit_with_header_and_placeholder, placeholder_offset]
+    """
+    commit_lines = list(commit.splitlines())
+    header_end_index = commit_lines.index(b'')
+
+    vanity_token = b'vanity'
+    if commit_lines[header_end_index - 1] == b' -----END PGP SIGNATURE-----':
+        insert_index = header_end_index - 1
+        vanity_token = b' vanity'
+    else:
+        insert_index = header_end_index
+        vanity_token = b'vanity '
+
+    if commit_lines[insert_index - 1].startswith(vanity_token):
+        insert_index = insert_index - 1
+        commit_lines.pop(insert_index)
+
+    prefix = b'\n'.join(commit_lines[:insert_index]) + b'\n' + vanity_token
+    rest = ((b'F'*16) + b'\n' +
+             b'\n'.join(commit_lines[insert_index:]) + b'\n')
+
+    header = commit_header(len(prefix) + len(rest))
+
+    return (header + prefix + rest, len(header) + len(prefix))
 
 def commit_header(commit_len):
     return bytes('commit %d\x00' % commit_len, 'ascii')
@@ -220,10 +249,10 @@ def sha1_prefix_search_opencl(data, hex_prefix, offset,
     else:
         raise ValueError("Unable to find matching prefix...")
 
-def amend_commit(committer_name,
-                 committer_mail,
-                 committer_date,
-                 hex_magic):
+def amend_commit_using_committer(committer_name,
+                                 committer_mail,
+                                 committer_date,
+                                 hex_magic):
     env = os.environ.copy()
     env['GIT_COMMITTER_NAME'] = committer_name.decode() + " " + hex_magic
     env['GIT_COMMITTER_EMAIL'] = committer_mail.decode()
@@ -236,18 +265,35 @@ def amend_commit(committer_name,
     print('Current HEAD:')
     subprocess.check_call(['git', 'show-ref', '-s', 'HEAD', '--head'])
 
-def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False):
+def amend_commit_using_raw(object_contents):
+    cmd = subprocess.Popen(
+                ['git', 'hash-object', '-w', '-t', 'commit', '--stdin'],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE
+            )
+    commit = cmd.communicate(input=object_contents)[0].strip()
+
+    subprocess.check_call(['git', 'update-ref', 'HEAD', commit])
+    print('Current HEAD:')
+    subprocess.check_call(['git', 'show-ref', '-s', 'HEAD', '--head'])
+
+
+def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False,
+         use_raw_changes=False):
     """
     Attempts to change in the current directory
     hex_prefix is the desired prefix
     start is int or hex string
     """
     commit = extract_commit('HEAD')
-    [data,
-     placeholder_offset,
-     committer_name,
-     committer_mail,
-     committer_date] = preprocess_commit(commit)
+
+    if use_raw_changes:
+        [data, placeholder_offset] = preprocess_commit_raw_change(commit)
+    else:
+        [data,
+         placeholder_offset,
+         committer_name,
+         committer_mail,
+         committer_date] = preprocess_commit_committer_change(commit)
 
     if isinstance(start, str):
         start = int(start, 16)
@@ -269,6 +315,7 @@ def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False):
     final = (data[:placeholder_offset] +
              result.encode() +
              data[placeholder_offset + 16:])
+    final_object = commit_without_header(final)
 
     print(("\nFound sha1 prefix `%s'\n"
            "with sha1 `%s'\n"
@@ -277,11 +324,17 @@ def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False):
           % (hex_prefix,
              sha1(final).hexdigest(),
              result,
-             commit_without_header(final).decode()))
+             final_object.decode()))
 
     if write_changes:
         print("Writing changes to the repository...\n")
-        amend_commit(committer_name, committer_mail, committer_date, result)
+        if use_raw_changes:
+            amend_commit_using_raw(final_object)
+        else:
+            amend_commit_using_committer(committer_name,
+                                         committer_mail,
+                                         committer_date,
+                                         result)
         print("All done.")
     else:
         print("Changes not written to the repository.")
@@ -289,8 +342,8 @@ def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False):
 
 if __name__ ==  '__main__':
     parser = argparse.ArgumentParser(
-        description="Create vanity commit hashes "
-                    "by extending the committer name.")
+        description="Create vanity commits "
+                    "by extending the committer's name or the commit object.")
     parser.add_argument('hex_prefix',
                         type=str,
                         help="the desired hex prefix")
@@ -316,10 +369,15 @@ if __name__ ==  '__main__':
                         action='store_true',
                         default=False,
                         help="quiet mode, disables progress")
+    parser.add_argument('-r', '--raw',
+                        action='store_true',
+                        default=False,
+                        help="change the raw commit instead of the committer")
 
     args = parser.parse_args()
 
     main(args.hex_prefix, args.start,
          args.gs, args.ws,
          args.write,
-         args.quiet)
+         args.quiet,
+         args.raw)

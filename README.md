@@ -3,7 +3,7 @@ git-vanity
 
 **git-vanity** is a tool for generating git commit hashes with a pre-specified prefix (*vanity commits*).
 
-This is done by adding a string to the committer's name, note that the visualization utilities usually show the author's name.
+This is done either by adding a string to the committer's name (note that the visualization utilities usually show the author's name) or adding custom data to the commit's header.
 
 *Homepage:* FIXME
 
@@ -37,7 +37,7 @@ Example Usage
     $ git-vanity --help
     usage: git-vanity [-h] [-s START] [-g GS] [-w WS] [-W] [-q] hex_prefix
 
-    Create vanity commit hashes by extending the committer name.
+    Create vanity commits by extending the committer's name or the commit object.
 
     positional arguments:
       hex_prefix            the desired hex prefix
@@ -52,6 +52,7 @@ Example Usage
                             OpenCL work size (64,128,256,...)
       -W, --write           enable writing to the repo
       -q, --quiet           quiet mode, disables progress
+      -r, --raw             change the raw commit instead of the committer
 
 
     $ git deadbeef -W # change HEAD to sha starting with deadbeef
@@ -135,7 +136,7 @@ How does it work?
 
 **git-vanity** amends the last commit to have a hash that matches a particular prefix.
 
-This is achieved by appending a 64bit number in hexadecimal notation to the committer's name, which is not normally shown.
+This is achieved either by appending a 64bit number in hexadecimal notation to the committer's name, which is not normally shown, or by adding a vanity field to the commit header, which might interfere with low-level git software or future git versions.
 
 Example: the repository before the change looks like:
 
@@ -188,7 +189,7 @@ Besides I needed a toy project for playing around with OpenCL.
 
 #### Why the change to the commit is done in this way?
 
-One can change the author's/committer's names and emails and the two timestamps.
+If one is to adhere to the human git interface one can change the author's/committer's names and emails and the two timestamps.
 
 There are several reasons to append a fixed-width number to the committer name:
 
@@ -200,6 +201,14 @@ There are several reasons to append a fixed-width number to the committer name:
  * successive `git-vanity` applications need not further mangle the commit, they can just use the already allocated space for the number
  * 64 bits should be sufficient for the computationally feasible search space at the moment, and besides one can always tweak the committer name further
  * the length of the data during the search does not change, resulting in faster computation
+
+#### Is changing the raw commit dangerous?
+
+No it is not, although it is not recommended for serious long-lasting projects
+
+#### Which commits can be changed?
+
+Currently only the HEAD is changed but by manually switching the HEAD one can change all revisions.
 
 #### How fast is it?
 
@@ -222,9 +231,9 @@ See the previous question.
 
 #### Does it work with GPG singed commits?
 
-No, it will not work correctly on a signed commit.
+Yes, but only in raw commit mode, otherwise the program will not work correctly on a signed commit.
 
-If you apply it on a signed commit you must first remove the signature (you can use `git vanity 0 -W`) and then run it for the desired prefix.
+If you apply committer name vanity search on a signed commit you must first remove the signature (you can use `git vanity 0 -W`) and then run it for the desired prefix.
 
 #### Will it always find a hash?
 
