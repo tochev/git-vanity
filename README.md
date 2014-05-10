@@ -136,7 +136,7 @@ How does it work?
 
 **git-vanity** amends the last commit to have a hash that matches a particular prefix.
 
-This is achieved either by appending a 64bit number in hexadecimal notation to the committer's name, which is not normally shown, or by adding a vanity field to the commit header, which might interfere with low-level git software or future git versions.
+This is achieved by appending a 64bit number in hexadecimal notation to the committer's name, which is not normally shown. Another option offered by git-vanity is to add a vanity field containing a 64bit number to the commit header, which, though unlikely, might interfere with low-level git software or future git versions.
 
 Example: the repository before the change looks like:
 
@@ -202,9 +202,11 @@ There are several reasons to append a fixed-width number to the committer name:
  * 64 bits should be sufficient for the computationally feasible search space at the moment, and besides one can always tweak the committer name further
  * the length of the data during the search does not change, resulting in faster computation
 
-#### Is changing the raw commit dangerous?
+#### What are the consequences of changing the raw commit?
 
-No it is not, although it is not recommended for serious long-lasting projects
+At the moment all of the software I'm aware of has not problems dealing with the changes introduced by git vanity. However, one should be aware of the remote possibility of problems with future git versions or low-level git tools.
+
+Use raw commit changes at your own risk.
 
 #### Which commits can be changed?
 
