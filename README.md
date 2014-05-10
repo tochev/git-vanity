@@ -220,6 +220,12 @@ Generally finding a 32-bit (8-symbol) prefix on Radeon HD 7750 takes a minute-tw
 
 See the previous question.
 
+#### Does it work with GPG singed commits?
+
+No, it will not work correctly on a signed commit.
+
+If you apply it on a signed commit you must first remove the signature (you can use `git vanity 0 -W`) and then run it for the desired prefix.
+
 #### Will it always find a hash?
 
 The short answer is if the prefix is short - yes, if it is not - it is up to your luck.
@@ -233,7 +239,6 @@ The source code is safe in that it will not damage any data.
 Since the program forces the hardware to work hard it needs sufficient cooling. This should not be a problem for cards running with stock settings in well ventilated environment. The rule of the thumb is that if it can do bitcoin/litecoin mining it can handle it.
 
 That being said, due to potential bugs in the GPU drivers it is possible, although highly unlikely, for the X to crash, for the computer to freeze, etc. A restart will fix any problem and then you can try to tweak down the global and work sizes.
-
 
 #### It did not work correctly.
 

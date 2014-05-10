@@ -132,7 +132,8 @@ def preprocess_commit(commit):
     """
     commit_lines = list(commit.splitlines())
 
-    committer_index = commit_lines.index(b'') - 1
+    committer_index = [i for (i,line) in enumerate(commit_lines)
+                       if line.startswith(b'committer ')][0]
     committer_line = commit_lines[committer_index]
 
     match = re.match(br'committer (?P<name>.*?)'
