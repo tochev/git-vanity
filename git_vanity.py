@@ -21,6 +21,8 @@ Please tweak GS and WS to suit your video card.
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+VERSION = "0.1.0"
+
 import argparse
 import numpy as np
 import os
@@ -342,6 +344,7 @@ def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False,
 
 if __name__ ==  '__main__':
     parser = argparse.ArgumentParser(
+        prog="git-vanity",
         description="Create vanity commits "
                     "by extending the committer's name or the commit object.")
     parser.add_argument('hex_prefix',
@@ -373,6 +376,9 @@ if __name__ ==  '__main__':
                         action='store_true',
                         default=False,
                         help="change the raw commit instead of the committer")
+    parser.add_argument('--version',
+                        action='version',
+                        version="%(prog)s " + VERSION)
 
     args = parser.parse_args()
 

@@ -8,8 +8,8 @@ This is done either by adding a string to the committer's name (note that the vi
 *Homepage:* FIXME
 
 
-Installing
-----------
+Install
+-------
 
 Install `python3`, `pyopencl`, `numpy`, and `opencl`:
 
@@ -35,7 +35,8 @@ Example Usage
 ### Usage
 
     $ git-vanity --help
-    usage: git-vanity [-h] [-s START] [-g GS] [-w WS] [-W] [-q] hex_prefix
+    usage: git-vanity [-h] [-s START] [-g GS] [-w WS] [-W] [-q] [-r] [--version]
+                      hex_prefix
 
     Create vanity commits by extending the committer's name or the commit object.
 
@@ -53,6 +54,7 @@ Example Usage
       -W, --write           enable writing to the repo
       -q, --quiet           quiet mode, disables progress
       -r, --raw             change the raw commit instead of the committer
+      --version             show program's version number and exit
 
 
     $ git deadbeef -W # change HEAD to sha starting with deadbeef
