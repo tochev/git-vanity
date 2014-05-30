@@ -358,7 +358,7 @@ if __name__ ==  '__main__':
                         dest='gs',
                         default=GS,
                         type=int,
-                        help="OpenCL global size (careful)")
+                        help="OpenCL global size (use carefully)")
     parser.add_argument('-w', '--work-size',
                         dest='ws',
                         default=WS,
@@ -367,7 +367,7 @@ if __name__ ==  '__main__':
     parser.add_argument('-W', '--write',
                         action='store_true',
                         default=False,
-                        help="enable writing to the repo")
+                        help="write to the repo")
     parser.add_argument('-q', '--quiet',
                         action='store_true',
                         default=False,
