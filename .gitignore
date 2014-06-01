@@ -1,0 +1,9 @@
+*.pyc
+*.pyo
+*~
+.*.sw?
+.DS_Store
+.project
+.pydevproject
+tags
+Thumbs.db
