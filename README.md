@@ -253,13 +253,17 @@ Since the program forces the hardware to work hard it needs sufficient cooling. 
 
 That being said, due to potential bugs in the GPU drivers it is possible, although highly unlikely, for the X to crash, for the computer to freeze, etc. A restart will fix the problem and then you can try to tweak down the global and work sizes.
 
+#### It is causing CPU load and seems slow. ####
+
+Sometimes the OpenCL support for the GPU might not be installed or configured correctly. Make sure that the GPU is listed by `clinfo` and that `git-vanity PREFIX` states that it is using the GPU (`Using device: '...' (device type: GPU)`).
+
 #### It did not work correctly. ####
 
 As with any software bugs happen.
 
 If it seems that the bug is related to code running on the GPU please restart the PC (to rule out any temporally problems in the drivers) and try without any overclocking.
 
-If the problem persists please send me the output of `git cat-file -p HEAD`, your command line, information about your setup (hardware, X, drivers), and any errors.
+If the problem persists please send me the output of `git cat-file -p HEAD`, your command line, information about your setup (hardware, X, drivers, the output of `clinfo`), and any errors.
 I will try to replicate the problem but finding similar setup might be hard.
 
 #### Can I use the CPU? ####

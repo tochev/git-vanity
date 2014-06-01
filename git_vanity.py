@@ -109,6 +109,12 @@ def sha1_preprocess_data(data):
     preprocessed_message[-8:] = list(struct.pack('>Q', len(data)*8))
     return preprocessed_message
 
+def display_device_info(opencl_device):
+    print("Using device: '%s' (device type: %s)" %
+            (opencl_device.name,
+             {cl.device_type.CPU: "CPU",
+              cl.device_type.GPU: "GPU"}.get(opencl_device.type, 'unknown')))
+
 def load_opencl():
     """Returns opencl context, queue, program"""
     CL_PROGRAM = open(
@@ -212,7 +218,9 @@ def sha1_prefix_search_opencl(data, hex_prefix, offset,
     """Return %016x.upper() or raises a ValueError if nothing is found"""
     if opencl_vars is None:
         opencl_vars = load_opencl()
-        ctx, queue, prg = opencl_vars
+    ctx, queue, prg = opencl_vars
+
+    display_device_info(queue.device)
 
     assert gs % ws == 0, "Global size must be a multiple of work size"
 
