@@ -6,6 +6,8 @@ This is done either by adding a string to the committer's name (note that the vi
 
 *Homepage:* https://github.com/tochev/git-vanity
 
+Demo: https://github.com/tochev/git_vanity_demo
+
 
 ## Install ##
 
