@@ -265,7 +265,7 @@ def amend_commit_using_committer(committer_name,
     subprocess.check_call(['git', 'commit', '--amend', '--no-edit',
                            '-c', 'HEAD'], env=env)
     print('Current HEAD:')
-    subprocess.check_call(['git', 'show-ref', '-s', 'HEAD', '--head'])
+    subprocess.check_call(['git', 'rev-parse', 'HEAD'])
 
 def amend_commit_using_raw(object_contents):
     cmd = subprocess.Popen(
@@ -276,7 +276,7 @@ def amend_commit_using_raw(object_contents):
 
     subprocess.check_call(['git', 'update-ref', 'HEAD', commit])
     print('Current HEAD:')
-    subprocess.check_call(['git', 'show-ref', '-s', 'HEAD', '--head'])
+    subprocess.check_call(['git', 'rev-parse', 'HEAD'])
 
 
 def main(hex_prefix, start=0, gs=GS, ws=WS, write_changes=False, quiet=False,
