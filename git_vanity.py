@@ -276,11 +276,11 @@ def amend_commit_using_committer(committer_name,
     subprocess.check_call(['git', 'rev-parse', 'HEAD'])
 
 def amend_commit_using_raw(object_contents):
-    cmd = subprocess.Popen(
-                ['git', 'hash-object', '-w', '-t', 'commit', '--stdin'],
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE
-            )
-    commit = cmd.communicate(input=object_contents)[0].strip()
+    hash_object_output = subprocess.check_output(
+        ['git', 'hash-object', '-w', '-t', 'commit', '--stdin'],
+        input=object_contents
+    )
+    commit = hash_object_output.decode('ascii').strip()  # it should always be ascii
 
     subprocess.check_call(['git', 'update-ref', 'HEAD', commit])
     print('Current HEAD:')
