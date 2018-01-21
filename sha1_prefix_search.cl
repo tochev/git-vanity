@@ -30,7 +30,13 @@
 #define K2  0x8F1BBCDC
 #define K3  0xCA62C1D6
 
+#ifdef NVIDIA
+#define S(x, n) ((x << n) | ((x) >> (32 - n)))
+#else
+#define S(x, n) rotate((x), (uint)(n))
+#endif
 #define SWAP32(n) (rotate(n & 0x00FF00FF, 24U)|(rotate(n, 8U) & 0x00FF00FF))
+//#define SWAP32(a) (as_uint(as_uchar4(a).wzyx))
 
 /*
  * sha1_prefix_search - searches for sha1 sum of the data with particular prefix
@@ -54,7 +60,6 @@ __kernel void sha1_prefix_search(
     ) {
     uint t;
     uint W[16], temp, A,B,C,D,E;
-    uint counter_words;
 
     const uint gid = get_global_id(0);
 
@@ -64,9 +69,6 @@ __kernel void sha1_prefix_search(
                  0x98BADCFE,
                  0x10325476,
                  0xC3D2E1F0};
-
-    const uchar TO_HEX[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
-                                      '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
     __global const uint * chunk=(__global const uint *)preprocessed_message;
     __global const uint * stop = chunk + (message_size >> 2);
@@ -80,7 +82,8 @@ __kernel void sha1_prefix_search(
         if ((t < (offset & 0x3)) || (t >= ((offset & 0x3)+16))) {
             special_words[t] = preprocessed_message[(offset & (0xFFFFFFFF << 2)) +t];
         } else {
-            special_words[t] = TO_HEX[(current >> (60 - ((t - (offset & 0x3)) << 2))) & 0xF];
+            special_words[t] = (uchar)(48 + ((current >> (60 - ((t - (offset & 0x3)) << 2))) & 0xF));
+            if (special_words[t] > 57) { special_words[t] += 7; } // this is the only thing that seems to work on MAC...
         }
     }
 
@@ -110,13 +113,17 @@ __kernel void sha1_prefix_search(
 (                                                         \
     temp = W[(t -  3) & 0x0F] ^ W[(t - 8) & 0x0F] ^       \
            W[(t - 14) & 0x0F] ^ W[ t      & 0x0F],        \
-    ( W[t & 0x0F] = rotate((int)temp,1) )                 \
+    ( W[t & 0x0F] = S(temp,1) )                 \
 )
 
 #undef P
 #define P(a,b,c,d,e,x)                                    \
 {                                                         \
-    e += rotate((int)a,5) + F(b,c,d) + K + x; b = rotate((int)b,30);\
+    e += S(a,5) + F(b,c,d) + K + x; b = S(b,30);\
+}
+#define P(a,b,c,d,e,x)                                    \
+{                                                         \
+    e += S(a,5) + F(b,c,d) + K + x; b = S(b,30);          \
 }
 
 #ifdef NVIDIA
@@ -244,19 +251,39 @@ __kernel void sha1_prefix_search(
 
     } // end loop
 
-    // Check if prefix is correct and return if not
-    counter_words = precision_bits/32;
-    for (t = 0; t < counter_words; t++) {
-        if (target[t] != H[t]) {
-            return;
-        }
+
+    // This ugly if-mess is the only thing that seems to run properly on Mac with NVidia...
+    if (precision_bits < 32) {
+       if (target[0] != (H[0] & (0xFFFFFFFF << (32 - precision_bits)))) {return;}
     }
-    if (counter_words < 5 && (precision_bits % 32)) {
-        if (target[counter_words]
-                !=
-            (H[counter_words] & (0xFFFFFFFF << ((counter_words+1)*32 - precision_bits)))) {
-            return;
-        }
+    else if (precision_bits < 64) {
+       if (target[0] != H[0]) {return;}
+       if (target[1] != (H[1] & (0xFFFFFFFF << (64 - precision_bits)))) {return;}
+    }
+    else if (precision_bits < 96) {
+       if (target[0] != H[0]) {return;}
+       if (target[1] != H[1]) {return;}
+       if (target[2] != (H[2] & (0xFFFFFFFF << (96 - precision_bits)))) {return;}
+    }
+    else if (precision_bits < 128) {
+       if (target[0] != H[0]) {return;}
+       if (target[1] != H[1]) {return;}
+       if (target[2] != H[2]) {return;}
+       if (target[3] != (H[3] & (0xFFFFFFFF << (128 - precision_bits)))) {return;}
+    }
+    else if (precision_bits < 160) {
+       if (target[0] != H[0]) {return;}
+       if (target[1] != H[1]) {return;}
+       if (target[2] != H[2]) {return;}
+       if (target[3] != H[3]) {return;}
+       if (target[4] != (H[4] & (0xFFFFFFFF << (160 - precision_bits)))) {return;}
+    }
+    else { // precision_bits == 160 (sha1)
+       if (target[0] != H[0]) {return;}
+       if (target[1] != H[1]) {return;}
+       if (target[2] != H[2]) {return;}
+       if (target[3] != H[3]) {return;}
+       if (target[4] != H[4]) {return;}
     }
 
     // WE FOUND IT :)
