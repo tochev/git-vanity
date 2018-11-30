@@ -169,6 +169,8 @@ After `git vanity deadbeef -W` we get:
  - bitcoin and litecoin vanity address generators
  - [vanitygen](https://github.com/samr7/vanitygen) bitcoin address generator
  - [gitbrute](https://github.com/bradfitz/gitbrute/) CPU vanity git commit generator using committer and author timestamps
+ - [scallion](https://github.com/lachesis/scallion) OpenCL vanity GPG fingerprint and .onion addresses generator
+ - [shallot](https://github.com/katmagic/Shallot) CPU based generator for .onion address (for Tor hidden services), inspired scallion
 
 ## License ##
 
