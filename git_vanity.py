@@ -270,10 +270,14 @@ def amend_commit_using_committer(committer_name,
 
     print(env['GIT_COMMITTER_NAME'])
 
-    subprocess.check_call(['git', 'commit', '--amend', '--allow-empty', '--no-edit',
-                           '-c', 'HEAD'], env=env)
+    subprocess.check_call([
+        'git', 'commit',
+        '--amend', '--allow-empty', '--allow-empty-message', '--no-edit',
+        '-c', 'HEAD'
+    ], env=env)
     print('Current HEAD:')
     subprocess.check_call(['git', 'rev-parse', 'HEAD'])
+
 
 def amend_commit_using_raw(object_contents):
     hash_object_output = subprocess.check_output(
