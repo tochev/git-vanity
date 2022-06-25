@@ -1,0 +1,51 @@
+name: Default Workflow
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '*'
+
+permissions:
+  contents: read
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git pocl-opencl-icd python3 python3-numpy python3-pyopencl
+
+      - name: Install package
+        run: sudo ln -sf $PWD/git_vanity.py /usr/bin/git-vanity
+
+      - name: Create test repo
+        run: |
+          mkdir /tmp/sample-repo
+          cd /tmp/sample-repo
+          git config --global init.defaultBranch master
+          git init
+          git config user.name 'John Doe'
+          git config user.email 'john.doe@example.com'
+          echo 'This is a sample repo' > README.md
+          git add README.md
+          git commit -m 'Add README'
+          git commit -m 'Add empty commit' --allow-empty
+          echo 'With some changes.' >> README.md
+          git commit -a -m 'Add line of changes'
+          echo 'And more changes...' >> README.md
+          git commit -a -m 'Add final change to REAME'
+
+      - name: Test
+        run: |
+          cd /tmp/sample-repo
+          git vanity 123 -W
+          git --no-pager log
+          git log | head -n 1 | grep --color -E '^commit 123.*'
+        env:
+          PYOPENCL_CTX: 0
