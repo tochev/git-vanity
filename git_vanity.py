@@ -31,13 +31,15 @@ import re
 import struct
 import subprocess
 import time
+
 from datetime import timedelta
 from hashlib import sha1
 
 
 GS = 4*1024*1024      # GPU iteration global_size
 WS = 64               # work_size
-MIN_PROGRESS_RESOLUTION = 1.0 # seconds
+MIN_PROGRESS_RESOLUTION = 1.0  # seconds
+
 
 def hex2target(hex_prefix):
     """Returns 5*int32 0-padded target and bit length based on hex prefix"""
@@ -46,6 +48,7 @@ def hex2target(hex_prefix):
         [int(data[i*8 : (i+1)*8], 16) for i in range(5)],
         dtype=np.uint32)
     return target, len(hex_prefix)*4
+
 
 def progress(start, stop, step, precision_bits, quiet=False):
     """yields new starts and displays progress"""
@@ -95,11 +98,13 @@ def progress(start, stop, step, precision_bits, quiet=False):
 
         current += step
 
+
 def get_padded_size(size):
     """Returns the size of the text of size `size' after preprocessing"""
     if (size % 64) > 55:
         return ((size // 64) + 2) * 64
     return ((size // 64) + 1) * 64
+
 
 def sha1_preprocess_data(data):
     size = get_padded_size(len(data))
@@ -109,11 +114,13 @@ def sha1_preprocess_data(data):
     preprocessed_message[-8:] = list(struct.pack('>Q', len(data)*8))
     return preprocessed_message
 
+
 def display_device_info(opencl_device):
     print("Using device: '%s' (device type: %s)" %
             (opencl_device.name,
              {cl.device_type.CPU: "CPU",
               cl.device_type.GPU: "GPU"}.get(opencl_device.type, 'unknown')))
+
 
 def load_opencl():
     """Returns opencl context, queue, program"""
@@ -129,8 +136,10 @@ def load_opencl():
     prg = cl.Program(ctx, CL_PROGRAM).build()
     return ctx, queue, prg
 
+
 def extract_commit(rev):
     return subprocess.check_output(["git", "cat-file", "-p", rev])
+
 
 def preprocess_commit_committer_change(commit):
     """
@@ -170,6 +179,7 @@ def preprocess_commit_committer_change(commit):
             committer_mail,
             committer_date)
 
+
 def preprocess_commit_raw_change(commit):
     """
     Returns:
@@ -198,17 +208,21 @@ def preprocess_commit_raw_change(commit):
 
     return (header + prefix + rest, len(header) + len(prefix))
 
+
 def commit_header(commit_len):
     return bytes('commit %d\x00' % commit_len, 'ascii')
 
+
 def commit_add_header(commit):
     return commit_header(len(commit)) + commit
+
 
 def commit_without_header(commit):
     null_index = commit.find(b'\x00')
     if null_index == -1:
         return commit
     return commit[null_index + 1:]
+
 
 def sha1_prefix_search_opencl(data, hex_prefix, offset,
                               start=0, stop=(1 << 64),
@@ -258,6 +272,7 @@ def sha1_prefix_search_opencl(data, hex_prefix, offset,
 
     else:
         raise ValueError("Unable to find matching prefix...")
+
 
 def amend_commit_using_committer(committer_name,
                                  committer_mail,
@@ -394,8 +409,11 @@ if __name__ ==  '__main__':
 
     args = parser.parse_args()
 
-    main(args.hex_prefix, args.start,
-         args.gs, args.ws,
-         args.write,
-         args.quiet,
-         args.raw)
+    main(
+        hex_prefix=args.hex_prefix,
+        start=args.start,
+        gs=args.gs, ws=args.ws,
+        write_changes=args.write,
+        quiet=args.quiet,
+        use_raw_changes=args.raw,
+    )

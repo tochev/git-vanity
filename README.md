@@ -17,6 +17,9 @@ Install `python3`, `pyopencl`, `numpy`, and `opencl`:
     apt-get install amd-libopencl1 amd-opencl-icd
     apt-get install python3 python3-numpy python3-pyopencl
 
+    # for arch
+    pacman -S pocl ocl-icd
+
 Get the project:
 
     git clone https://github.com/tochev/git-vanity
@@ -57,7 +60,7 @@ Optional: export `PYOPENCL_CTX` to avoid being prompted for the OpenCL device to
       --version             show program's version number and exit
 
 
-    $ git deadbeef -W # change HEAD to commit having id starting with deadbeef
+    $ git vanity deadbeef -W  # change HEAD to commit having id starting with deadbeef
     ...
 
     $ git log | head -n 1
